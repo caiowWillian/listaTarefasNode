@@ -10,11 +10,27 @@ export default class Todo extends Component {
     
     constructor(props){
         super(props)
-        this.state = { description: '', list: [] }
+        this.state = { description: 'dada', list: [] }
         this.handleChange = this.handleChange.bind(this)
         this.handleAdd = this.handleAdd.bind(this)
+        this.handleRemove = this.handleRemove.bind(this)
+        this.handleCheck = this.handleCheck.bind(this)
+        this.handleCheckPeding = this.handleCheckPeding.bind(this)
+        this.handleSearch = this.handleSearch.bind(this)
+        this.handleClear = this.handleClear.bind(this)
+        this.refresh()
     }
     
+    refresh(description = ''){
+        const search = description ? `&description__regex=/${description}/` : ''
+        axios.get(`${URL}?sort=-createdAt${search}`)
+        .then(resp => this.setState({
+            ...this.state,
+            description,
+            list: resp.data
+        }))
+    }
+
     handleChange(e){
         this.setState({ ...this.state, description: e.target.value })
     }
@@ -22,19 +38,52 @@ export default class Todo extends Component {
     handleAdd(){
         const description = this.state.description
         axios.post(URL, { description })
-        .then(resp => console.log('Funcionou!'))
+        .then(resp => this.refresh())
     }
     
+    handleRemove(todo){
+        axios.delete(`${URL}/${todo._id}`).then(resp => this.refresh(this.state.description))
+    }
+
+    handleCheck(todo){
+        axios.put(`${URL}/${todo._id}`, {...todo, done: true}).then(resp => this.refresh(this.state.description))
+    }
+
+    handleCheckPeding(todo){
+        axios.put(`${URL}/${todo._id}`, {...todo, done:false}).then(resp => this.refresh(this.state.description))
+    }
+
+    handleSearch(){
+        this.refresh()
+    }
+
+    handleClear(){
+        console.log('dadad')
+        this.refresh()
+    }
+
     render(){
         return (
             <div>
-                <PageHeader name='Tarefas' small='Cadastro'></PageHeader>
+                <PageHeader 
+                    name='Tarefas' 
+                    small='Cadastro'>
+                </PageHeader>
+                
                 <TodoForm 
                     handleChange={this.handleChange} 
                     description={this.state.description} 
-                    handleAdd={this.handleAdd}/>
+                    handleAdd={this.handleAdd}
+                    handleSearch={this.handleSearch}
+                    handleClear={this.handleClear}>
+                </TodoForm>
                 
-                <TodoList />
+                <TodoList 
+                    list={this.state.list}
+                    handleRemove={this.handleRemove}
+                    handleCheck={this.handleCheck}
+                    handleCheckPeding={this.handleCheckPeding}> 
+                </TodoList>
             </div>
         )
     }
